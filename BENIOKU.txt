@@ -28,21 +28,21 @@ AÇMAK
   iş bitene kadar kapatmayın.
 
 KULLANIM
-  1. Giriş klasörünü seçin (Seç… düğmesi ya da yolu yapıştırın).
-  2. Çıkış klasörünü seçin. Boş bırakırsanız giriş klasöründe "hapq" açılır.
+  1. "Kaynak Klasör"ü seçin ("Gözat" düğmesi ya da yolu yapıştırın).
+  2. "Hedef Klasör"ü seçin. Boş bırakırsanız kaynak klasörde "hapq" açılır.
   3. Listede her dosyanın renk durumu görünür:
        yeşil  : sorun yok
        sarı   : bakılması gereken bir şey var (ör. renk etiketi yok)
        kırmızı: bu dosya bu hâliyle dönüştürülemez ya da yanlış çıkar
      Renk etiketi olmayan dosyada "Önizle"ye basın; iki renk yorumundan
-     kaynağa uyanı "Bunu kullan" ile seçin.
-  4. "Dönüştürmeyi başlat"a basın. Bitince her satırda "Renk doğru" ya da
+     kaynağa uyanı "Bunu Kullan" ile seçin.
+  4. "Dönüştürmeyi Başlat"a basın. Bitince her satırda "Renk Doğru" ya da
      uyarı görünür. Önizle ile kaynak ve çıktıyı yan yana görebilirsiniz.
 
 NOTLAR
   - Program yalnız bu bilgisayardan erişilebilir; internete bir şey göndermez.
   - Yarıda kalan iş yeniden başlatılınca biten dosyalar atlanır.
-  - Hata olursa ayrıntı çıkış klasöründeki _hata_loglari klasörüne yazılır.
+  - Hata olursa ayrıntı hedef klasördeki _hata_loglari klasörüne yazılır.
   - HAP için görüntünün eni ve boyu 4'ün katı olmalıdır.
 
 YAZAR

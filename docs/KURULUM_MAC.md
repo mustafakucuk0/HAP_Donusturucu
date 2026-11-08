@@ -1,4 +1,4 @@
-# 🍎 macOS Kurulum Rehberi
+# macOS Kurulum Rehberi
 
 Bu rehber HAP Dönüştürücü'yü bir Mac'te sıfırdan çalıştırmayı adım adım anlatır.
 Toplam süre: ilk seferde ~10–15 dakika (çoğu ffmpeg indirmesi).
@@ -46,7 +46,7 @@ xcode-select --install
 brew install ffmpeg-full
 ```
 
-> ⚠️ Sade `brew install ffmpeg` **HAP kodlayamayabilir**. `ffmpeg-full` kullanın.
+> **Dikkat:** Sade `brew install ffmpeg` **HAP kodlayamayabilir**. `ffmpeg-full` kullanın.
 
 Denetlemek için:
 
@@ -104,10 +104,10 @@ python3 hapq_server.py
 
 ## 7. Kullanım
 
-1. Giriş klasörünü seçin.
-2. Çıkış klasörünü seçin (boş bırakırsanız giriş klasöründe `hapq` açılır).
+1. **Kaynak Klasör**'ü seçin.
+2. **Hedef Klasör**'ü seçin (boş bırakırsanız kaynak klasörde `hapq` açılır).
 3. Renk durumlarını kontrol edin (yeşil / sarı / kırmızı).
-4. **Dönüştürmeyi başlat**.
+4. **Dönüştürmeyi Başlat**'a basın.
 
 Ayrıntılar için [README](../README.md#kullanım).
 
@@ -118,5 +118,5 @@ Ayrıntılar için [README](../README.md#kullanım).
 | Arayüzde "ffmpeg sorunu" | `brew install ffmpeg-full`, sonra programı kapatıp yeniden açın |
 | "python3 bulunamadı" | `xcode-select --install` |
 | Tarayıcı açılmadı | Terminal'de yazan `http://127.0.0.1:8770/...` adresini kopyalayıp tarayıcıya yapıştırın |
-| Bir dosya hata verdi | Çıkış klasöründeki `_hata_loglari` klasörüne bakın |
+| Bir dosya hata verdi | Hedef klasördeki `_hata_loglari` klasörüne bakın |
 | "eni/boyu 4'ün katı olmalı" | Videoyu 4'ün katı bir çözünürlüğe getirin (ör. 1920×1080 olur, 1918×1080 olmaz) |
