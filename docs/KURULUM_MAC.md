@@ -28,17 +28,23 @@ brew --version
 
 Kurulum sonunda ekranda **"Next steps"** altında iki komut yazar (Apple Silicon Mac'lerde `eval "$(/opt/homebrew/bin/brew shellenv)"` ile ilgili). Onları da çalıştırın, sonra Terminal'i kapatıp yeniden açın.
 
-## 3. Python 3'ü denetleyin
+## 3. uv'yi kurun (Python için)
+
+[uv](https://docs.astral.sh/uv/), Python'u sizin yerinize indirip çalıştıran küçük bir araçtır. Python'u ayrıca kurmanıza gerek kalmaz.
 
 ```bash
-python3 --version
+brew install uv
 ```
 
-Bir sürüm (3.8 ya da üstü) yazıyorsa tamam. Yoksa ya da bir pencere açılıp "geliştirici araçlarını kur" derse kabul edin, veya:
+Homebrew kullanmak istemiyorsanız:
 
 ```bash
-xcode-select --install
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+
+Programı ilk açtığınızda uv gerekli Python sürümünü bir kez indirir (internet gerekir, birkaç saniye sürer). Sonraki açılışlarda internet gerekmez.
+
+> Bilgisayarınızda zaten Python 3.8 ya da üstü varsa uv'siz de çalışır; başlatıcı uv'yi bulamazsa `python3`'ü kullanır.
 
 ## 4. ffmpeg'i kurun
 
@@ -99,7 +105,7 @@ chmod +x ~/Desktop/HAP_Donusturucu/HAP_Donusturucu_Mac.command
 Terminal'de `cd ` yazın (sonunda bir boşluk), klasörü Terminal penceresine sürükleyin, Enter'a basın. Sonra:
 
 ```bash
-python3 hapq_server.py
+uv run --no-project --python 3.12 hapq_server.py
 ```
 
 ## 7. Kullanım
@@ -116,7 +122,7 @@ Ayrıntılar için [README](../README.md#kullanım).
 | Belirti | Çözüm |
 |---|---|
 | Arayüzde "ffmpeg sorunu" | `brew install ffmpeg-full`, sonra programı kapatıp yeniden açın |
-| "python3 bulunamadı" | `xcode-select --install` |
+| "Python bulunamadı" | `brew install uv`, sonra başlatıcıya yeniden çift tıklayın |
 | Tarayıcı açılmadı | Terminal'de yazan `http://127.0.0.1:8770/...` adresini kopyalayıp tarayıcıya yapıştırın |
 | Bir dosya hata verdi | Hedef klasördeki `_hata_loglari` klasörüne bakın |
 | "eni/boyu 4'ün katı olmalı" | Videoyu 4'ün katı bir çözünürlüğe getirin (ör. 1920×1080 olur, 1918×1080 olmaz) |

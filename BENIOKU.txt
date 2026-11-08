@@ -10,8 +10,10 @@ GEREKENLER
                          (sade "brew install ffmpeg" HAP kodlayamayabilir)
                Windows:  winget install Gyan.FFmpeg
                          ya da ffmpeg.exe ve ffprobe.exe'yi bu klasöre koyun
-  - Python 3   Mac'te genelde zaten var (yoksa: xcode-select --install)
-               Windows:  winget install Python.Python.3.12
+  - uv         Python'u kendisi indirir; ayrıca Python kurmaya gerek yok.
+               Mac:      brew install uv
+               Windows:  winget install --id=astral-sh.uv -e
+               (Zaten Python 3.8+ varsa uv'siz de çalışır.)
 
 AÇMAK
   Mac:      HAP_Donusturucu_Mac.command dosyasına çift tıklayın.
@@ -21,7 +23,7 @@ AÇMAK
               - (macOS 14 ve öncesinde dosyaya sağ tık > Aç > Aç da yeterli.)
             Yine açılmazsa en kesin yol: Terminal'i açın, "cd " yazıp (sonda boşluk)
             bu klasörü Terminal penceresine sürükleyin, Enter'a basın, sonra şunu yazın:
-              python3 hapq_server.py
+              uv run --no-project --python 3.12 hapq_server.py
   Windows:  HAP_Donusturucu_Windows.bat dosyasına çift tıklayın.
 
   Tarayıcıda arayüz açılır. Açılan siyah pencere programın kendisidir;

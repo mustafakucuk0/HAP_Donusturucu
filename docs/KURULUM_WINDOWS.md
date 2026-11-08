@@ -12,22 +12,23 @@ Toplam süre: ilk seferde ~10 dakika.
 **Başlat** menüsüne sağ tık → **Terminal** (ya da **Windows PowerShell**).
 Aşağıdaki komutları bu pencereye yapıştırıp Enter'a basacaksınız.
 
-## 2. Python 3'ü kurun
+## 2. uv'yi kurun (Python için)
 
-Var mı diye bakın:
-
-```powershell
-py --version
-```
-
-Bir sürüm (3.8 ya da üstü) yazıyorsa bu adımı atlayın. Yoksa:
+[uv](https://docs.astral.sh/uv/), Python'u sizin yerinize indirip çalıştıran küçük bir araçtır. Python'u ayrıca kurmanıza, PATH ayarıyla uğraşmanıza gerek kalmaz.
 
 ```powershell
-winget install Python.Python.3.12
+winget install --id=astral-sh.uv -e
 ```
 
-**winget yoksa:** [python.org/downloads](https://www.python.org/downloads/) adresinden indirip kurun.
-> **Dikkat:** Kurulumun ilk ekranında **"Add python.exe to PATH"** kutusunu mutlaka işaretleyin.
+**winget yoksa:**
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Kurduktan sonra PowerShell'i kapatıp yeniden açın. Programı ilk açtığınızda uv gerekli Python sürümünü bir kez indirir (internet gerekir, birkaç saniye sürer). Sonraki açılışlarda internet gerekmez.
+
+> Bilgisayarınızda zaten Python 3.8 ya da üstü varsa uv'siz de çalışır; başlatıcı uv'yi bulamazsa `py` ya da `python`'u kullanır.
 
 ## 3. ffmpeg'i kurun
 
@@ -80,12 +81,12 @@ Program yalnızca bu bilgisayardan erişilen yerel bir sunucu açar (`127.0.0.1`
 
 ### "Python bulunamadı" derse
 
-Python kurulu ama PATH'te değil demektir. Python'u yeniden kurup **"Add python.exe to PATH"** kutusunu işaretleyin, ya da bilgisayarı yeniden başlatın.
+uv kurulu değil ya da yeni kurulduğu için henüz görünmüyor demektir. 2. adımdaki komutla uv'yi kurun; kuruluysa bilgisayarı yeniden başlatıp tekrar deneyin.
 
 Elle çalıştırmak için klasörde adres çubuğuna `powershell` yazıp Enter'a basın, sonra:
 
 ```powershell
-py -3 hapq_server.py
+uv run --no-project --python 3.12 hapq_server.py
 ```
 
 ## 6. Kullanım

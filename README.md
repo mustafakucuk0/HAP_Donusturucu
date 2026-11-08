@@ -4,8 +4,8 @@ Bir klasördeki videoları medya sunucuları için **HAP Q (.mov)** biçimine to
 Dönüştürmeden önce her dosyanın renk matrisini (BT.709 / BT.601) denetler, bitince çıktının renklerini kaynakla karşılaştırır.
 
 - macOS ve Windows'ta çalışır
-- Yalnızca **Python 3** ve **ffmpeg** gerektirir
-- Her şey kendi bilgisayarınızda çalışır; internet gerekmez, dışarıya hiçbir şey gönderilmez
+- Yalnızca **[uv](https://docs.astral.sh/uv/)** ve **ffmpeg** gerektirir; uv, Python'u kendisi indirir
+- Her şey kendi bilgisayarınızda çalışır; ilk açılıştaki Python indirmesi dışında internet gerekmez, dışarıya hiçbir şey gönderilmez
 - Arayüz Türkçe ve İngilizce, açık ve koyu tema
 
 ## Kurulum rehberleri
@@ -21,7 +21,9 @@ Dönüştürmeden önce her dosyanın renk matrisini (BT.709 / BT.601) denetler,
    ```bash
    git clone https://github.com/mustafakucuk0/HAP_Donusturucu.git
    ```
-2. Python 3 ve ffmpeg'i kurun (ayrıntılar rehberlerde).
+2. uv ve ffmpeg'i kurun (ayrıntılar rehberlerde):
+   - macOS: `brew install uv ffmpeg-full`
+   - Windows: `winget install --id=astral-sh.uv -e` ve `winget install Gyan.FFmpeg`
 3. Başlatıcıya çift tıklayın:
    - macOS: `HAP_Donusturucu_Mac.command`
    - Windows: `HAP_Donusturucu_Windows.bat`
@@ -64,7 +66,8 @@ Dil (TR / EN) ve tema (açık / koyu) sağ üstteki düğmelerden değişir; se�
 - Yarıda kalan iş yeniden başlatılınca bitmiş dosyalar atlanır.
 - Hata olursa ayrıntılar hedef klasördeki `_hata_loglari` klasörüne yazılır.
 - HAP için görüntünün eni ve boyu **4'ün katı** olmalıdır.
-- Başlatıcı olmadan çalıştırmak için: `python3 hapq_server.py --port 8770 --no-browser`
+- Başlatıcı olmadan çalıştırmak için: `uv run --no-project --python 3.12 hapq_server.py --port 8770 --no-browser`
+- Bilgisayarda zaten Python 3.8+ varsa uv şart değil; başlatıcılar uv'yi bulamazsa sistemdeki Python'u kullanır.
 
 ## Dosyalar
 
