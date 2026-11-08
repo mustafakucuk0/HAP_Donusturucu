@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HAP Dönüştürücü</title>
+<meta name="author" content="Mustafa Küçük">
+<style>
+:root{
+  --bg:#f4f3ef; --panel:#ffffff; --ink:#1c1c1a; --muted:#6c6a64; --line:#e2e0da; --soft:#efede7;
+  --primary:#1c1c1a; --on-primary:#ffffff; --focus:#2f5f9e;
+  --ok:#1f7a4d; --ok-bg:#e3f2ea; --warn:#9a5b00; --warn-bg:#fbf0dc; --err:#b3261e; --err-bg:#fbe5e3;
+  --info:#2f5f9e; --info-bg:#e5edf8; --bar:#1c1c1a;
+  --radius:10px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#121211; --panel:#1b1b19; --ink:#ebe9e3; --muted:#9b988f; --line:#2e2d2a; --soft:#252421;
+    --primary:#ebe9e3; --on-primary:#121211; --focus:#79a7e8;
+    --ok:#5cc28b; --ok-bg:#16301f; --warn:#e2a948; --warn-bg:#33270f; --err:#f07167; --err-bg:#3a1a17;
+    --info:#79a7e8; --info-bg:#172438; --bar:#ebe9e3; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:120px}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:20px;margin:0;letter-spacing:-.01em}
+h2{font-size:15px;margin:0}
+.credit{margin-left:auto;font-size:12px;color:var(--muted)}
+.pill{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.err{background:var(--err-bg);color:var(--err)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.banner{border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;background:var(--err-bg);color:var(--err)}
+.banner code{font-family:var(--mono);background:rgba(0,0,0,.06);padding:1px 6px;border-radius:5px}
+.frow{display:grid;grid-template-columns:120px 1fr auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.frow label{font-weight:600}
+input[type=text],input[type=number],select{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+input[type=text]{font-family:var(--mono);font-size:13px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+button{font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:8px 14px;cursor:pointer;white-space:nowrap}
+button:hover:not(:disabled){filter:brightness(.96)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary);font-weight:600;padding:10px 20px}
+button.danger{background:var(--err);color:#fff;border-color:var(--err)}
+button.small{padding:4px 10px;font-size:12px}
+.check{display:flex;gap:8px;align-items:center;cursor:pointer;user-select:none}
+.muted{color:var(--muted)} .sub{color:var(--muted);font-size:12px}
+.resolved{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:128px;word-break:break-all}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px 18px;margin-top:12px}
+.field label{display:block;font-weight:600;margin-bottom:4px}
+.field .help{font-size:12px;color:var(--muted);margin-top:4px}
+.checks{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px}
+.listhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.listhead .sp{flex:1}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:980px}
+th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.off td{opacity:.55}
+td.c{width:28px}
+.fn{font-weight:600;word-break:break-all}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px}
+.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.l-ok{color:var(--ok);background:var(--ok-bg)} .l-warn{color:var(--warn);background:var(--warn-bg)}
+.l-err{color:var(--err);background:var(--err-bg)} .l-info{color:var(--info);background:var(--info-bg)}
+.notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-width:360px}
+.notes li{font-size:12px;padding:3px 8px;border-radius:6px}
+.colsel{margin-top:6px;font-size:12px;padding:4px 6px;width:auto}
+.prog{height:6px;background:var(--soft);border-radius:4px;overflow:hidden;margin:6px 0 3px;min-width:120px}
+.prog>i{display:block;height:100%;background:var(--bar);width:0;transition:width .4s}
+.err-msg{font-family:var(--mono);font-size:11px;color:var(--err);white-space:pre-wrap;max-width:300px;margin-top:4px}
+tr.detail td{background:var(--soft)}
+.pv{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pv figure{margin:0}
+.pv img{width:100%;display:block;border-radius:6px;background:repeating-conic-gradient(var(--line) 0 25%,transparent 0 50%) 0 0/16px 16px;min-height:60px}
+.pv figcaption{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin-top:6px}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.06)}
+.dock .wrap{display:flex;gap:16px;align-items:center;padding:12px 16px;flex-wrap:wrap}
+.dock .info{flex:1;min-width:240px}
+.dock .prog{height:8px;margin:6px 0 0}
+.space-bad{color:var(--err);font-weight:600}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--err);color:#fff;padding:10px 16px;border-radius:8px;max-width:90vw;display:none;z-index:9}
+@media (max-width:700px){
+  .frow{grid-template-columns:1fr 1fr}
+  .frow label{grid-column:1/-1}
+  .frow input{grid-column:1/-1}
+  .resolved{margin-left:0}
+  .pv{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>HAP Dönüştürücü</h1>
+    <span id="envPill" class="pill">ffmpeg denetleniyor…</span>
+    <span class="credit">Mustafa Küçük</span>
+  </header>
+
+  <div id="envBanner" class="banner" hidden></div>
+
+  <section class="card">
+    <div class="frow">
+      <label for="inDir">Giriş klasörü</label>
+      <input id="inDir" type="text" placeholder="Videoların olduğu klasör (yolu yapıştırabilirsiniz)" spellcheck="false">
+      <button id="pickIn">Seç…</button>
+      <span></span>
+    </div>
+    <div class="frow">
+      <label for="outDir">Çıkış klasörü</label>
+      <input id="outDir" type="text" placeholder="Boş bırakılırsa: giriş klasörü/hapq" spellcheck="false">
+      <button id="pickOut">Seç…</button>
+      <button id="openOut" title="Çıkış klasörünü aç">Aç</button>
+    </div>
+    <div id="resolved" class="resolved"></div>
+    <div class="checks">
+      <label class="check"><input type="checkbox" id="recursive"> Alt klasörleri de tara (klasör yapısı çıkışta korunur)</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Ayarlar</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="format">Biçim</label>
+        <select id="format">
+          <option value="hap_q">HAP Q: yüksek kalite (önerilen)</option>
+          <option value="hap">HAP: küçük dosya, düşük kalite</option>
+          <option value="hap_alpha">HAP Alpha: saydamlık için</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="compressor">Sıkıştırma</label>
+        <select id="compressor">
+          <option value="snappy">Snappy: dosya küçülür (önerilen)</option>
+          <option value="none">Yok: en büyük dosya, en az işlemci</option>
+        </select>
+        <div class="help">Oynatıcı bilgisayarın diski yavaşsa Snappy.</div>
+      </div>
+      <div class="field">
+        <label for="chunks">Parça sayısı</label>
+        <input id="chunks" type="number" min="1" max="64" value="8">
+        <div class="help">Oynatıcı kareyi bu kadar çekirdekle açar. Yalnız Snappy'de geçerli.</div>
+      </div>
+      <div class="field">
+        <label for="jobs">Aynı anda kaç dosya</label>
+        <input id="jobs" type="number" min="1" max="8" value="2">
+        <div class="help">Büyük çözünürlükte 2–3 yeterli; fazlası belleği doldurur.</div>
+      </div>
+      <div class="field">
+        <label for="audio">Ses</label>
+        <select id="audio">
+          <option value="pcm_s24le">PCM 24 bit (önerilen)</option>
+          <option value="pcm_s16le">PCM 16 bit</option>
+          <option value="none">Sessiz (sesi at)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="assume">Renk etiketi olmayan dosyalar</label>
+        <select id="assume">
+          <option value="bt709">BT.709 say: HD ve üstü (önerilen)</option>
+          <option value="bt601">BT.601 say: eski SD</option>
+        </select>
+        <div class="help">Dosya başına değiştirmek için satırdaki Önizle'ye basın.</div>
+      </div>
+      <div class="field">
+        <label for="cfr">Kare hızı</label>
+        <select id="cfr">
+          <option value="">Kaynaktaki gibi</option>
+          <option value="src">Sabitle (kaynağın hızında)</option>
+          <option value="25">Sabit 25</option>
+          <option value="30">Sabit 30</option>
+          <option value="50">Sabit 50</option>
+          <option value="60">Sabit 60</option>
+        </select>
+      </div>
+    </div>
+    <div class="checks">
+      <label class="check"><input type="checkbox" id="skip_existing" checked> Çıktısı zaten olanları atla</label>
+      <label class="check"><input type="checkbox" id="verify" checked> Bitince renkleri kaynakla karşılaştır</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="listhead">
+      <h2>Dosyalar</h2>
+      <span id="scanInfo" class="sub"></span>
+      <span class="sp"></span>
+      <button id="rescan" class="small">Yeniden tara</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th class="c"><input type="checkbox" id="selAll" title="Hepsini seç"></th>
+          <th>Dosya</th><th>Görüntü</th><th>Renk</th><th>Notlar</th><th>Durum</th>
+        </tr></thead>
+        <tbody id="rows"><tr><td colspan="6" class="empty">Bir giriş klasörü seçin.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="dock"><div class="wrap">
+  <div class="info">
+    <div id="summary">Dosya seçilmedi.</div>
+    <div class="prog" id="totalProg" hidden><i></i></div>
+    <div id="totalText" class="sub"></div>
+  </div>
+  <button id="cancelBtn" class="danger" hidden>Durdur</button>
+  <button id="startBtn" class="primary" disabled>Dönüştürmeyi başlat</button>
+</div></div>
+<div id="toast" class="toast" role="alert"></div>
+
+<script>
+const TOKEN = "__HAPQ_TOKEN__";
+const $ = s => document.querySelector(s);
+const MN = {bt709:"BT.709", bt601:"BT.601", bt2020:"BT.2020", smpte240m:"SMPTE 240M", fcc:"FCC"};
+const LVL_RANK = {ok:0, info:1, warn:2, err:3};
+const SETTING_IDS = ["format","compressor","chunks","jobs","audio","assume","cfr","skip_existing","verify"];
+
+let ENV = null, FILES = [], BYID = {}, FREE = null, OUTDIR = "";
+let SEL = new Set(), OVR = {}, ST = null, pollTimer = null, OPEN = new Set();
+const S = {};
+
+// ---------- yardımcılar
+function store(k, v){ try{ localStorage.setItem("hapq_"+k, JSON.stringify(v)); }catch(e){} }
+function load(k, d){ try{ const v = localStorage.getItem("hapq_"+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } }
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtBytes(b){ if(b==null) return "?"; const u=["B","KB","MB","GB","TB"]; let i=0; while(b>=1024&&i<4){b/=1024;i++;} return b.toFixed(i>=3?1:0)+" "+u[i]; }
+function fmtDur(s){ if(!s && s!==0) return "?"; s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return (h? h+":"+String(m).padStart(2,"0") : m)+":"+String(x).padStart(2,"0"); }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none", 6000); }
+
+async function api(path, body){
+  let r;
+  try{
+    r = await fetch(path, {method: body===undefined ? "GET" : "POST",
+      headers: {"X-Token": TOKEN, "Content-Type": "application/json"},
+      body: body===undefined ? undefined : JSON.stringify(body)});
+  }catch(e){ throw new Error("Sunucuya ulaşılamıyor. Başlatıcı penceresi kapanmış olabilir; yeniden çalıştırın."); }
+  const j = await r.json().catch(() => ({error: "Sunucudan yanıt alınamadı."}));
+  if(!r.ok || j.error) throw new Error(j.error || ("Hata "+r.status));
+  return j;
+}
+
+// ---------- ayarlar
+function readSettings(){
+  for(const id of SETTING_IDS){
+    const el = $("#"+id);
+    S[id] = el.type==="checkbox" ? el.checked : (el.type==="number" ? Number(el.value) : el.value);
+  }
+  store("settings", S);
+}
+function applySettings(saved){
+  for(const id of SETTING_IDS){
+    if(saved[id]===undefined) continue;
+    const el = $("#"+id);
+    if(el.type==="checkbox") el.checked = !!saved[id]; else el.value = saved[id];
+  }
+  readSettings();
+}
+
+// ---------- renk planı (dönüşümde kullanılacak matris)
+function plan(f){
+  const c = f.color, notes = [];
+  if(!c) return {m:null, lvl:"err", label:"-", sub:"", notes, hdr:false};
+  if(c.rgb) return {m:null, lvl:"ok", label:"RGB kaynak", sub:"Renk dönüşümü gerekmez", notes, hdr:false};
+  const ov = OVR[f.id] || "auto";
+  let m, how;
+  if(ov!=="auto"){ m=ov; how="elle seçildi"; }
+  else if(c.tag){ m=c.tag; how="dosyadaki etiket"; }
+  else { m=S.assume; how="varsayım (etiket yok)"; }
+  let lvl = "ok";
+  const bump = l => { if(LVL_RANK[l] > LVL_RANK[lvl]) lvl = l; };
+  const hdr = c.transfer==="smpte2084" || c.transfer==="arib-std-b67";
+  if(hdr){
+    bump("err");
+    notes.push(["err", "HDR video ("+(c.transfer==="smpte2084"?"PQ":"HLG")+"). HAP yalnız SDR saklar; renkler soluk ve yanlış çıkar. Kaynağı SDR (BT.709) olarak yeniden verin."]);
+  }else if(c.primaries==="bt2020" || m==="bt2020"){
+    bump("warn");
+    notes.push(["warn", "Geniş renk alanı (BT.2020). Medya sunucusu BT.709 gibi gösterir; renkler soluk görünebilir."]);
+  }
+  if(!c.tag && ov==="auto"){
+    bump("warn");
+    notes.push(["warn", "Renk etiketi yok; "+MN[m]+" varsayılacak. Önizle ile iki yorumu karşılaştırıp doğrusunu seçin."]);
+  }
+  if(ov!=="auto" && c.tag && ov!==c.tag){
+    bump("warn");
+    notes.push(["warn", "Dosyanın etiketi "+MN[c.tag]+", elle "+MN[ov]+" seçildi."]);
+  }
+  if(ov==="auto" && c.tag==="bt601" && (f.w>=1280 || f.h>=720)){
+    bump("info");
+    notes.push(["info", "HD görüntüde BT.601 etiketi var; etikete uyuldu. Yanlış etiketlenmiş olabilir, önizlemeye bakın."]);
+  }
+  const range = c.range==="pc" ? "tam aralık" : "sınırlı aralık";
+  return {m, lvl, label: MN[m]||m, sub: range+(c.range_tag?"":" (varsayım)")+" · "+how, notes, hdr};
+}
+
+function allNotes(f, p){
+  const n = [...(f.notes||[]), ...p.notes];
+  if(f.ok && f.alpha && S.format!=="hap_alpha")
+    n.push(["warn", "Saydamlık (alfa) var; HAP Q saydamlığı taşımaz. Gerekiyorsa biçimi HAP Alpha yapın."]);
+  if(f.ok && !f.alpha && S.format==="hap_alpha")
+    n.push(["info", "Kaynakta saydamlık yok; HAP Q daha kaliteli olur."]);
+  if(f.exists) n.push(S.skip_existing ? ["info", "Çıktı zaten var; atlanacak."] : ["warn", "Çıktı zaten var; üzerine yazılacak."]);
+  return n;
+}
+
+// ---------- tablo
+function render(){
+  const tb = $("#rows");
+  if(!FILES.length){
+    tb.innerHTML = '<tr><td colspan="6" class="empty">'+($("#inDir").value ? "Bu klasörde video bulunamadı." : "Bir giriş klasörü seçin.")+"</td></tr>";
+    updateSummary(); return;
+  }
+  tb.innerHTML = FILES.map(rowHtml).join("");
+  for(const id of OPEN) fillDetail(id);
+  updateSummary();
+}
+
+function rowHtml(f){
+  const p = plan(f), on = SEL.has(f.id), busy = isBusy();
+  const vid = f.w ? `${f.w}×${f.h} · ${f.fps ? (+f.fps.toFixed(3))+" fps" : "? fps"} · ${fmtDur(f.dur)}` : "-";
+  const vsub = f.w ? `${esc(f.codec)} · ${esc(f.pix_fmt)} · ${f.bits} bit${f.audio ? " · ses "+f.audio.n : " · sessiz"} · ${fmtBytes(f.size)}` : "";
+  let colsel = "";
+  if(f.ok && f.color && !f.color.rgb){
+    const ov = OVR[f.id] || "auto";
+    colsel = `<br><select class="colsel" data-ovr="${f.id}" ${busy?"disabled":""} aria-label="Renk yorumu">
+      <option value="auto"${ov==="auto"?" selected":""}>Otomatik</option>
+      ${["bt709","bt601","bt2020"].map(m=>`<option value="${m}"${ov===m?" selected":""}>${MN[m]}</option>`).join("")}
+    </select>`;
+  }
+  const notes = allNotes(f, p);
+  return `<tr data-id="${f.id}" class="${on?"":"off"}">
+    <td class="c"><input type="checkbox" data-sel="${f.id}" ${on?"checked":""} ${f.ok&&!busy?"":"disabled"} aria-label="Seç"></td>
+    <td><div class="fn">${esc(f.rel)}</div><div class="sub">→ ${esc(f.out_rel||"")}</div></td>
+    <td>${vid}<div class="sub">${vsub}</div></td>
+    <td><span class="badge l-${p.lvl}">${esc(p.label)}</span><div class="sub">${esc(p.sub)}</div>${colsel}</td>
+    <td>${notes.length ? `<ul class="notes">${notes.map(([l,t])=>`<li class="l-${l}">${esc(t)}</li>`).join("")}</ul>` : '<span class="sub">-</span>'}</td>
+    <td class="st" id="st-${f.id}">${statusHtml(f)}</td>
+  </tr>
+  <tr class="detail" id="dt-${f.id}" ${OPEN.has(f.id)?"":"hidden"}><td colspan="6"></td></tr>`;
+}
+
+function statusHtml(f){
+  const r = ST && ST.files && ST.files[f.id];
+  const pv = f.ok ? `<button class="small" data-pv="${f.id}">${OPEN.has(f.id)?"Kapat":"Önizle"}</button>` : "";
+  if(!r) return (f.exists ? '<span class="sub">Çıktı var</span><br>' : ST ? '<span class="sub">Dönüştürülmedi</span><br>' : '') + pv;
+  const pct = Math.round((r.progress||0)*100);
+  switch(r.status){
+    case "waiting": return '<span class="sub">Sırada</span>';
+    case "running": return `<div class="prog"><i style="width:${pct}%"></i></div><span class="sub">%${pct}${r.speed?" · "+esc(r.speed):""}</span>`;
+    case "verifying": return '<div class="prog"><i style="width:100%"></i></div><span class="sub">Renkler karşılaştırılıyor…</span>';
+    case "skipped": return '<span class="badge l-info">Atlandı</span><div class="sub">Çıktı zaten vardı</div>'+pv;
+    case "cancelled": return '<span class="badge l-warn">Durduruldu</span>';
+    case "failed": return `<span class="badge l-err">Hata</span><div class="err-msg">${esc(r.msg)}</div>${r.log?`<div class="sub">Kayıt: ${esc(r.log)}</div>`:""}`;
+    case "done": {
+      const v = r.verify;
+      const vb = v ? `<div style="margin-top:4px"><span class="badge l-${v.lvl}">${v.lvl==="ok"?"Renk doğru":v.lvl==="warn"?"Renk uyarısı":"Renk"}</span></div><div class="sub">${esc(v.msg)}${v.mad!=null?` (fark ${v.mad})`:""}</div>` : "";
+      return `<span class="badge l-ok">Tamam</span><div class="sub">${fmtBytes(r.size)}</div>${vb}${pv}`;
+    }
+  }
+  return "";
+}
+
+function isBusy(){ return ST && ST.state==="running"; }
+
+function thumbUrl(f, which, m){
+  return `/api/thumb?token=${encodeURIComponent(TOKEN)}&id=${f.id}&which=${which}&m=${m||""}&v=${Date.now()}`;
+}
+
+function fillDetail(id){
+  const f = BYID[id], row = $("#dt-"+id);
+  if(!f || !row) return;
+  row.hidden = false;
+  const td = row.firstElementChild, p = plan(f);
+  const r = ST && ST.files && ST.files[id];
+  const outReady = (r && r.status==="done") || f.exists;
+  let html;
+  if(outReady){
+    html = `<div class="pv">
+      <figure><img alt="Kaynak karesi" src="${thumbUrl(f,"src",f.color.rgb?"":f.color.player)}"><figcaption><span>Kaynak (oynatıcıda göründüğü gibi${f.color.rgb?"":", "+MN[f.color.player]})</span></figcaption></figure>
+      <figure><img alt="HAP çıktı karesi" src="${thumbUrl(f,"out")}"><figcaption><span>HAP çıktı</span></figcaption></figure>
+    </div><div class="sub" style="margin-top:8px">İki kare aynı görünmeli. Ortadaki kare gösteriliyor.</div>`;
+  }else if(f.color && !f.color.rgb){
+    const opts = ["bt709","bt601"];
+    html = `<div class="pv">${opts.map(m=>`
+      <figure><img alt="${MN[m]} yorumu" src="${thumbUrl(f,"src",m)}">
+      <figcaption><span><b>${MN[m]}</b> olarak${f.color.tag===m?" (dosyanın etiketi)":""}${p.m===m?" · şu an seçili":""}</span>
+      <button class="small" data-use="${f.id}:${m}" ${p.m===m||isBusy()?"disabled":""}>Bunu kullan</button></figcaption></figure>`).join("")}
+    </div><div class="sub" style="margin-top:8px">Hangisi kaynağın asıl rengine (ör. kurgu programında gördüğünüze) uyuyorsa onu seçin. Fark en çok yeşil ve kırmızılarda görülür.</div>`;
+  }else{
+    html = `<div class="pv"><figure><img alt="Kaynak karesi" src="${thumbUrl(f,"src","")}"><figcaption><span>Kaynak (RGB)</span></figcaption></figure></div>`;
+  }
+  td.innerHTML = html;
+}
+
+function toggleDetail(id){
+  if(OPEN.has(id)){ OPEN.delete(id); const row=$("#dt-"+id); if(row){ row.hidden=true; row.firstElementChild.innerHTML=""; } }
+  else { OPEN.add(id); fillDetail(id); }
+  const st = $("#st-"+id); if(st) st.innerHTML = statusHtml(BYID[id]);
+}
+
+// ---------- özet
+function willProcess(f){ return SEL.has(f.id) && f.ok && !(f.exists && S.skip_existing); }
+function estBytes(f){
+  const frames = f.frames || Math.round((f.dur||0)*(f.fps||25));
+  return f.w*f.h*(S.format==="hap"?0.5:1)*frames;
+}
+function updateSummary(){
+  const sel = FILES.filter(f=>SEL.has(f.id) && f.ok);
+  const todo = sel.filter(willProcess);
+  const est = todo.reduce((a,f)=>a+estBytes(f),0);
+  const warnN = sel.filter(f=>{ const p=plan(f); return LVL_RANK[p.lvl]>=2 || (f.alpha && S.format!=="hap_alpha"); }).length;
+  $("#selAll").checked = FILES.length>0 && FILES.filter(f=>f.ok).every(f=>SEL.has(f.id));
+  if(!isBusy() && !(ST && (ST.state==="done"||ST.state==="cancelled"))){
+    if(!sel.length){ $("#summary").textContent = "Dosya seçilmedi."; }
+    else{
+      const bad = FREE!=null && est > FREE;
+      $("#summary").innerHTML = `<b>${sel.length}</b> dosya seçili`+(todo.length!==sel.length?`, <b>${todo.length}</b> tanesi dönüştürülecek`:"")+
+        ` · tahmini boyut en fazla <b>${fmtBytes(est)}</b>`+
+        (FREE!=null?` · boş alan <span class="${bad?"space-bad":""}">${fmtBytes(FREE)}</span>`:"")+
+        (bad?` <span class="space-bad">(yer yetmeyebilir)</span>`:"")+
+        (warnN?` · <span style="color:var(--warn)">${warnN} dosyada uyarı var</span>`:"");
+    }
+  }
+  $("#startBtn").disabled = isBusy() || !todo.length || !(ENV && ENV.hap);
+}
+
+// ---------- tarama
+let scanSeq = 0;
+async function scan(){
+  readSettings();
+  const input = $("#inDir").value.trim(), output = $("#outDir").value.trim();
+  store("in", input); store("out", output); store("rec", $("#recursive").checked);
+  if(!input){ FILES=[]; render(); return; }
+  const seq = ++scanSeq;
+  $("#scanInfo").textContent = "Taranıyor…";
+  try{
+    const r = await api("/api/scan", {input, output, recursive: $("#recursive").checked});
+    if(seq!==scanSeq) return;
+    applySession(r, true);
+  }catch(e){
+    if(seq!==scanSeq) return;
+    FILES=[]; BYID={}; render(); $("#scanInfo").textContent=""; toast(e.message);
+  }
+}
+
+function applySession(r, fresh){
+  FILES = r.files || []; BYID = {}; for(const f of FILES) BYID[f.id]=f;
+  FREE = r.free; OUTDIR = r.output || "";
+  if(fresh){
+    SEL = new Set(FILES.filter(f=>f.ok && !f.is_hap && !plan(f).hdr).map(f=>f.id));
+    OVR = {}; OPEN = new Set();
+    if(ST && ST.state!=="running"){ ST = null; $("#totalProg").hidden = true; $("#totalText").textContent = ""; }
+  }
+  $("#resolved").textContent = OUTDIR ? "Çıktılar: "+OUTDIR : "";
+  const n = FILES.length, bad = FILES.filter(f=>!f.ok).length;
+  $("#scanInfo").textContent = n ? `${n} video bulundu${bad?`, ${bad} tanesi dönüştürülemez`:""}` : "";
+  render();
+}
+
+// ---------- dönüştürme
+async function start(){
+  readSettings();
+  const ids = FILES.filter(f=>SEL.has(f.id) && f.ok).map(f=>f.id);
+  const matrices = {};
+  for(const id of ids){ const p = plan(BYID[id]); if(p.m) matrices[id]=p.m; }
+  const hdr = ids.filter(id=>plan(BYID[id]).hdr).length;
+  if(hdr && !confirm(hdr+" HDR dosya seçili; renkleri yanlış çıkacak. Yine de devam edilsin mi?")) return;
+  try{
+    ST = await api("/api/start", {ids, matrices, settings: S});
+    lockUI(true); poll();
+  }catch(e){ toast(e.message); }
+}
+
+async function poll(){
+  clearTimeout(pollTimer);
+  try{ ST = await api("/api/status"); }catch(e){ toast(e.message); pollTimer=setTimeout(poll, 2000); return; }
+  for(const id of Object.keys(ST.files)){
+    const el = $("#st-"+id); if(el) el.innerHTML = statusHtml(BYID[id]||{id});
+    if(OPEN.has(id) && ST.files[id].status==="done" && !(BYID[id]||{})._shownOut){ if(BYID[id]) BYID[id]._shownOut=true; fillDetail(id); }
+  }
+  updateTotals();
+  if(ST.state==="running"){ pollTimer = setTimeout(poll, 700); }
+  else { lockUI(false); finish(); }
+}
+
+function updateTotals(){
+  if(!ST || !ST.files || !ST.started) return;
+  let tot=0, done=0; const c = {};
+  for(const [id,r] of Object.entries(ST.files)){
+    c[r.status]=(c[r.status]||0)+1;
+    if(r.status==="skipped") continue;
+    const w = (BYID[id] && BYID[id].dur) || 1; tot += w;
+    done += w*(["done","failed","cancelled","verifying"].includes(r.status) ? 1 : (r.progress||0));
+  }
+  const frac = tot ? done/tot : 1, el = ((ST.finished||ST.now) - ST.started);
+  const eta = ST.state==="running" && frac>0.02 ? el*(1-frac)/frac : null;
+  $("#totalProg").hidden = false;
+  $("#totalProg").firstElementChild.style.width = Math.round(frac*100)+"%";
+  const n = Object.keys(ST.files).length, fin = (c.done||0)+(c.failed||0)+(c.skipped||0)+(c.cancelled||0);
+  $("#totalText").textContent = `%${Math.round(frac*100)} · ${fin}/${n} dosya · geçen ${fmtDur(el)}`+(eta!=null?` · kalan ~${fmtDur(eta)}`:"")+(c.failed?` · ${c.failed} hata`:"");
+  if(ST.state==="running") $("#summary").textContent = "Dönüştürülüyor…";
+}
+
+function finish(){
+  const c = {}; let vw = 0;
+  for(const r of Object.values(ST.files)){ c[r.status]=(c[r.status]||0)+1; if(r.verify && r.verify.lvl==="warn") vw++; }
+  const parts = [];
+  if(c.done) parts.push(c.done+" tamam");
+  if(c.skipped) parts.push(c.skipped+" atlandı");
+  if(c.failed) parts.push(`<span style="color:var(--err)">${c.failed} hata</span>`);
+  if(c.cancelled) parts.push(c.cancelled+" durduruldu");
+  $("#summary").innerHTML = (ST.state==="cancelled"?"<b>Durduruldu.</b> ":"<b>Bitti.</b> ")+parts.join(", ")+
+    (vw?` · <span style="color:var(--warn)">${vw} dosyada renk uyarısı</span>`:"")+
+    ` · <a href="#" id="openLink">Çıkış klasörünü aç</a>`;
+  const ol = $("#openLink"); if(ol) ol.onclick = e => { e.preventDefault(); openOut(); };
+  for(const f of FILES){ const r = ST.files[f.id]; if(r && r.status==="done") f.exists = true; }
+  updateSummary();
+}
+
+function lockUI(on){
+  for(const el of document.querySelectorAll("#inDir,#outDir,#pickIn,#pickOut,#recursive,#rescan,#selAll,"+SETTING_IDS.map(i=>"#"+i).join(",")))
+    el.disabled = on;
+  $("#cancelBtn").hidden = !on;
+  $("#startBtn").hidden = on;
+  render();  // satırdaki seçim kutuları isBusy()'ye göre yeniden çizilir
+}
+
+async function openOut(){
+  try{ await api("/api/open", {path: OUTDIR}); }catch(e){ toast(e.message); }
+}
+
+// ---------- olaylar
+async function pick(kind){
+  const field = kind==="input" ? $("#inDir") : $("#outDir");
+  const btn = kind==="input" ? $("#pickIn") : $("#pickOut");
+  btn.disabled = true; const old = btn.textContent; btn.textContent = "Pencere açık…";
+  try{
+    const r = await api("/api/pick", {kind, start: field.value.trim() || $("#inDir").value.trim()});
+    if(r.path){ field.value = r.path; await scan(); }
+  }catch(e){ toast(e.message); }
+  finally{ btn.disabled = false; btn.textContent = old; }
+}
+
+$("#pickIn").onclick = () => pick("input");
+$("#pickOut").onclick = () => pick("output");
+$("#openOut").onclick = openOut;
+$("#inDir").addEventListener("change", scan);
+$("#outDir").addEventListener("change", scan);
+$("#recursive").addEventListener("change", scan);
+$("#rescan").onclick = scan;
+$("#startBtn").onclick = start;
+$("#cancelBtn").onclick = async () => { try{ ST = await api("/api/cancel", {}); }catch(e){ toast(e.message); } };
+for(const id of SETTING_IDS) $("#"+id).addEventListener("change", () => { readSettings(); if(!isBusy()) render(); });
+
+$("#selAll").addEventListener("change", e => {
+  SEL = e.target.checked ? new Set(FILES.filter(f=>f.ok).map(f=>f.id)) : new Set();
+  render();
+});
+$("#rows").addEventListener("change", e => {
+  const t = e.target;
+  if(t.dataset.sel){ t.checked ? SEL.add(t.dataset.sel) : SEL.delete(t.dataset.sel); t.closest("tr").classList.toggle("off", !t.checked); updateSummary(); }
+  if(t.dataset.ovr){ if(t.value==="auto") delete OVR[t.dataset.ovr]; else OVR[t.dataset.ovr]=t.value; render(); }
+});
+$("#rows").addEventListener("click", e => {
+  const pv = e.target.closest("[data-pv]"); if(pv){ toggleDetail(pv.dataset.pv); return; }
+  const use = e.target.closest("[data-use]");
+  if(use){ const [id,m] = use.dataset.use.split(":"); const f=BYID[id]; if(f.color.tag===m) delete OVR[id]; else OVR[id]=m; render(); }
+});
+
+// ---------- açılış
+(async () => {
+  applySettings(load("settings", {}));
+  $("#recursive").checked = !!load("rec", false);
+  try{
+    ENV = await api("/api/env");
+    if(ENV.hap){
+      $("#envPill").className = "pill ok";
+      const ver = ((ENV.version.match(/ffmpeg version (\S+)/)||[])[1]||"").split("-")[0];
+      $("#envPill").textContent = ver ? "ffmpeg "+ver+" hazır" : "ffmpeg hazır";
+      $("#envPill").title = ENV.ffmpeg;
+    }else{
+      $("#envPill").className = "pill err"; $("#envPill").textContent = "ffmpeg sorunu";
+      const how = ENV.platform==="mac" ? "Terminal'de <code>brew install ffmpeg-full</code> çalıştırın"
+               : ENV.platform==="win" ? "PowerShell'de <code>winget install Gyan.FFmpeg</code> çalıştırın"
+               : "dağıtımınızın paket yöneticisiyle ffmpeg kurun";
+      $("#envBanner").innerHTML = esc(ENV.problem)+" Kurmak için "+how+", sonra bu programı kapatıp yeniden açın.";
+      $("#envBanner").hidden = false;
+    }
+    const ses = await api("/api/session");
+    if(ses.input){
+      $("#inDir").value = ses.input; $("#outDir").value = load("out","") ? ses.output : "";
+      $("#recursive").checked = !!ses.recursive;
+      ST = ses.runner && ses.runner.state!=="idle" ? ses.runner : null;
+      applySession(ses, !ST);
+      if(ST){ SEL = new Set(Object.keys(ST.files)); render(); }
+      if(ST && ST.state==="running"){ lockUI(true); poll(); }
+      else if(ST){ updateTotals(); finish(); }
+    }else{
+      $("#inDir").value = load("in",""); $("#outDir").value = load("out","");
+      if($("#inDir").value) scan();
+    }
+  }catch(e){ toast(e.message); $("#envPill").className="pill err"; $("#envPill").textContent="Sunucu yok"; }
+})();
+</script>
+</body>
+</html>
