@@ -1,6 +1,6 @@
 # HAP Dönüştürücü
 
-Bir klasördeki videoları medya sunucuları için **HAP Q (.mov)** biçimine toplu olarak çeviren, tarayıcıda çalışan yerel bir araç.
+Bir klasördeki videoları medya sunucuları için **HAP**, **HAP Alpha** ve **HAP Q** (.mov) biçimlerine toplu olarak çeviren, tarayıcıda çalışan yerel bir araç.
 Dönüştürmeden önce her dosyanın renk matrisini (BT.709 / BT.601) denetler, bitince çıktının renklerini kaynakla karşılaştırır.
 
 - macOS ve Windows'ta çalışır
