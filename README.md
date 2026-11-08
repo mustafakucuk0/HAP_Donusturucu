@@ -77,7 +77,6 @@ Dil (TR / EN) ve tema (açık / koyu) sağ üstteki düğmelerden değişir; se�
 | `hapq.html` | Tarayıcı arayüzü |
 | `HAP_Donusturucu_Mac.command` | macOS başlatıcısı |
 | `HAP_Donusturucu_Windows.bat` | Windows başlatıcısı |
-| `BENIOKU.txt` | Kısa, düz metin kullanım yönergesi |
 
 Arayüzün yazı tipi [Inter](https://rsms.me/inter/) (SIL Open Font License 1.1); internetsiz çalışması için `hapq.html` içine gömülüdür.
 
