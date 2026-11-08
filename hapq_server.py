@@ -23,7 +23,10 @@ import sys
 import tempfile
 import threading
 import time
+import urllib.error
+import urllib.request
 import webbrowser
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -33,6 +36,13 @@ IS_MAC = sys.platform == "darwin"
 IS_WIN = os.name == "nt"
 NOWIN = getattr(subprocess, "CREATE_NO_WINDOW", 0) if IS_WIN else 0
 TOKEN = secrets.token_urlsafe(18)
+
+# Yeni sürüm yayınlarken bu numarayı artırın ve GitHub'da aynı numarayla
+# (ör. v1.1.0) bir Release oluşturun; kullanıcıların programı onu görür.
+VERSION = "1.0.0"
+REPO = "mustafakucuk0/HAP_Donusturucu"
+UA = "HAP-Donusturucu/" + VERSION
+SRV = None
 
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".avi", ".m4v", ".webm", ".mxf"}
 MATRICES = {"bt709", "bt601", "bt2020", "smpte240m", "fcc"}
@@ -188,7 +198,7 @@ def get_env():
         return _ENV
     info = {"platform": "mac" if IS_MAC else "win" if IS_WIN else "linux",
             "cpus": os.cpu_count() or 4, "ffmpeg": FFMPEG or "", "version": "",
-            "hap": False, "problem": ""}
+            "hap": False, "problem": "", "app_version": VERSION}
     if not FFMPEG or not FFPROBE:
         info["problem"] = ("ffprobe bulunamadı (ffmpeg var: %s)." % FFMPEG) if FFMPEG else "ffmpeg bulunamadı."
     else:
@@ -203,6 +213,170 @@ def get_env():
             info["problem"] = "ffmpeg çalıştırılamadı: %s" % ex
     _ENV = info
     return info
+
+
+# ---------------------------------------------------------------- güncellemeler
+
+def _vtuple(s):
+    """'v1.2.0', '9.0.2_1', '7.1-full_build-www.gyan.dev' -> (1,2,0,0). Sürüm değilse None."""
+    m = re.match(r"\s*[vV]?(\d+(?:\.\d+){0,3})", s or "")
+    if not m:
+        return None
+    t = [int(x) for x in m.group(1).split(".")]
+    return tuple(t + [0] * (4 - len(t)))
+
+
+def _newer(latest, current):
+    a, b = _vtuple(latest), _vtuple(current)
+    return bool(a and b and a > b)
+
+
+def _fetch(url, timeout=6):
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def _app_update():
+    res = {"current": VERSION, "latest": None, "newer": False, "url": "https://github.com/%s/releases" % REPO,
+           "zip": None, "can_apply": True, "why": ""}
+    if os.path.isdir(os.path.join(HERE, ".git")):
+        res["can_apply"], res["why"] = False, "git"
+    elif not os.access(HERE, os.W_OK):
+        res["can_apply"], res["why"] = False, "readonly"
+    try:
+        j = json.loads(_fetch("https://api.github.com/repos/%s/releases/latest" % REPO))
+        res["latest"] = str(j.get("tag_name") or "").lstrip("vV") or None
+        res["url"] = j.get("html_url") or res["url"]
+        res["zip"] = j.get("zipball_url")
+        res["newer"] = _newer(res["latest"], VERSION)
+    except urllib.error.HTTPError as ex:
+        if ex.code != 404:  # 404: henüz hiç sürüm yayınlanmamış
+            res["error"] = True
+    except Exception:  # noqa: BLE001  (internet yok vb.: sessizce geç)
+        res["error"] = True
+    return res
+
+
+def _ffmpeg_update():
+    env = get_env()
+    m = re.search(r"ffmpeg version (\S+)", env.get("version") or "")
+    res = {"current": m.group(1) if m else "", "latest": None, "newer": False, "kind": "", "how": ""}
+    if not FFMPEG or not _vtuple(res["current"]):
+        return res  # bulunamadı ya da git derlemesi (sürüm numarası yok)
+    real = os.path.realpath(FFMPEG)
+    low = real.lower()
+    try:
+        cellar = re.search(r"/Cellar/([^/]+)/([^/]+)/", real)
+        if cellar:
+            name = cellar.group(1)
+            j = json.loads(_fetch("https://formulae.brew.sh/api/formula/%s.json" % name))
+            res["latest"] = (j.get("versions") or {}).get("stable")
+            res["kind"], res["how"] = "brew", "brew upgrade %s" % name
+        elif IS_WIN:
+            res["latest"] = txt(_fetch("https://www.gyan.dev/ffmpeg/builds/release-version")).strip() or None
+            if "gyan.ffmpeg" in low or "winget" in low:
+                res["kind"], res["how"] = "winget", "winget upgrade Gyan.FFmpeg"
+            elif "chocolatey" in low:
+                res["kind"], res["how"] = "choco", "choco upgrade ffmpeg-full"
+            elif "scoop" in low:
+                res["kind"], res["how"] = "scoop", "scoop update ffmpeg"
+            else:
+                res["kind"], res["how"] = "manual", "https://www.gyan.dev/ffmpeg/builds/"
+    except Exception:  # noqa: BLE001
+        res["error"] = True
+    res["newer"] = _newer(res["latest"], res["current"])
+    return res
+
+
+_UPD = {"at": 0, "data": None}
+_UPD_LOCK = threading.Lock()
+
+
+def check_updates(force=False):
+    with _UPD_LOCK:
+        if not force and _UPD["data"] and time.time() - _UPD["at"] < 1800:
+            return _UPD["data"]
+    with ThreadPoolExecutor(2) as ex:
+        a, f = ex.submit(_app_update), ex.submit(_ffmpeg_update)
+        data = {"app": a.result(), "ffmpeg": f.result()}
+    with _UPD_LOCK:
+        _UPD.update(at=time.time(), data=data)
+    return data
+
+
+def apply_update():
+    """Son sürümün zip'ini indirip program dosyalarının üzerine yazar.
+    Değişen dosyaların eski hâli .eski_surum klasörüne yedeklenir."""
+    if RUNNER.state == "running":
+        raise ApiError("Dönüştürme sürerken güncellenemez.")
+    info = check_updates(force=True)["app"]
+    if info["why"] == "git":
+        raise ApiError("Bu klasör git ile indirilmiş; güncellemek için klasörde git pull çalıştırın.")
+    if info["why"] == "readonly":
+        raise ApiError("Program klasörüne yazılamıyor; yeni sürümü GitHub'dan indirin.")
+    if not info["newer"] or not info["zip"]:
+        raise ApiError("Yeni sürüm bulunamadı.")
+    try:
+        data = _fetch(info["zip"], timeout=60)
+    except Exception:  # noqa: BLE001
+        raise ApiError("Güncelleme indirilemedi; internet bağlantınızı kontrol edin.")
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    try:
+        tmp.write(data)
+        tmp.close()
+        with zipfile.ZipFile(tmp.name) as z:
+            names = [n for n in z.namelist() if not n.endswith("/")]
+            prefix = os.path.commonprefix(names).rsplit("/", 1)[0] + "/" if names else ""
+            files = []
+            for n in names:
+                rel = n[len(prefix):]
+                parts = rel.replace("\\", "/").split("/")
+                if not rel or rel.startswith("/") or ".." in parts or ":" in rel:
+                    continue
+                files.append((n, os.path.join(HERE, *parts)))
+            rels = {os.path.relpath(d, HERE).replace("\\", "/") for _, d in files}
+            if not {"hapq_server.py", "hapq.html"} <= rels:
+                raise ApiError("İndirilen güncelleme beklenen dosyaları içermiyor.")
+            backup = os.path.join(HERE, ".eski_surum")
+            shutil.rmtree(backup, ignore_errors=True)
+            for n, dest in files:
+                if os.path.isfile(dest):
+                    b = os.path.join(backup, os.path.relpath(dest, HERE))
+                    os.makedirs(os.path.dirname(b), exist_ok=True)
+                    shutil.copy2(dest, b)
+            for n, dest in files:
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                with open(dest + ".yeni", "wb") as f:
+                    f.write(z.read(n))
+                os.replace(dest + ".yeni", dest)
+                if dest.endswith(".command"):
+                    os.chmod(dest, 0o755)
+    except zipfile.BadZipFile:
+        raise ApiError("İndirilen güncelleme bozuk.")
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+    restart = not IS_WIN
+    if restart:
+        threading.Timer(0.8, _restart).start()
+    return {"ok": True, "version": info["latest"], "restart": restart}
+
+
+def _restart():
+    """Mac/Linux: aynı pencerede yeni sürümle yeniden başlar."""
+    try:
+        if SRV:
+            SRV.server_close()
+        sys.stdout.flush()
+        args = [a for a in sys.argv[1:]]
+        if "--no-browser" not in args:
+            args.append("--no-browser")
+        os.execv(sys.executable, [sys.executable, os.path.abspath(__file__)] + args)
+    except Exception as ex:  # noqa: BLE001
+        print("Yeniden başlatılamadı (%s); programı kapatıp yeniden açın." % ex)
 
 
 # ---------------------------------------------------------------- tarama
@@ -789,6 +963,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, session())
             if u.path == "/api/status":
                 return self._send(200, RUNNER.snapshot())
+            if u.path == "/api/updates":
+                return self._send(200, check_updates())
             if u.path == "/api/thumb":
                 return self._send(200, thumb(q), "image/png")
         except ApiError as ex:
@@ -814,6 +990,8 @@ class Handler(BaseHTTPRequestHandler):
             if p == "/api/cancel":
                 RUNNER.cancel()
                 return self._send(200, RUNNER.snapshot())
+            if p == "/api/update":
+                return self._send(200, apply_update())
             if p == "/api/open":
                 return self._send(200, open_folder(body.get("path") or ""))
         except ApiError as ex:
@@ -844,9 +1022,11 @@ def main():
         print("Boş port bulunamadı.")
         sys.exit(1)
     srv.daemon_threads = True
+    global SRV
+    SRV = srv
     url = "http://127.0.0.1:%d/" % port
     env = get_env()
-    print("HAP Dönüştürücü çalışıyor: %s" % url)
+    print("HAP Dönüştürücü %s çalışıyor: %s" % (VERSION, url))
     if env["problem"]:
         print("SORUN: %s" % env["problem"])
         if FF_FOUND:

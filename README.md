@@ -5,7 +5,7 @@ Dönüştürmeden önce her dosyanın renk matrisini (BT.709 / BT.601) denetler,
 
 - macOS ve Windows'ta çalışır
 - Yalnızca **[uv](https://docs.astral.sh/uv/)** ve **ffmpeg** gerektirir; uv, Python'u kendisi indirir
-- Her şey kendi bilgisayarınızda çalışır; ilk açılıştaki Python indirmesi dışında internet gerekmez, dışarıya hiçbir şey gönderilmez
+- Her şey kendi bilgisayarınızda çalışır; videolarınız hiçbir yere gönderilmez. İnternet yalnızca ilk açılıştaki Python indirmesi ve isteğe bağlı güncelleme denetimi için kullanılır
 - Arayüz Türkçe ve İngilizce, açık ve koyu tema
 
 ## Kurulum rehberleri
@@ -60,6 +60,15 @@ Dil (TR / EN) ve tema (açık / koyu) sağ üstteki düğmelerden değişir; se�
 | Kare Hızı | Kaynakla aynı bırakın ya da sabit bir hıza çevirin |
 | Ses | PCM 24 bit, PCM 16 bit ya da sesi kaldırma |
 
+## Güncellemeler
+
+Program açılışta iki şeye bakar (Ayarlar'daki **Güncellemeleri Denetle** ile kapatılabilir):
+
+- **Yeni sürüm:** GitHub'da daha yeni bir sürüm yayınlandıysa üstte bir şerit çıkar. **Güncelle**'ye basınca program dosyaları indirilip değiştirilir; videolarınıza ve ayarlarınıza dokunulmaz. Değişen dosyaların eski hâli `.eski_surum` klasöründe saklanır. macOS'ta program kendini yeniden başlatır; Windows'ta pencereyi kapatıp başlatıcıyı yeniden açmanız istenir. Depoyu `git clone` ile indirdiyseniz güncellemek için `git pull` kullanın.
+- **ffmpeg:** Kurulu ffmpeg'in daha yeni bir sürümü çıktıysa güncelleme komutu gösterilir (macOS'ta `brew upgrade ffmpeg-full`, Windows'ta `winget upgrade Gyan.FFmpeg`).
+
+Denetim yalnızca sürüm numaralarını sorar (GitHub, Homebrew ve gyan.dev); internet yoksa sessizce atlanır.
+
 ## Notlar
 
 - Sunucu yalnızca bu bilgisayardan erişilebilir (`127.0.0.1`).
@@ -77,6 +86,8 @@ Dil (TR / EN) ve tema (açık / koyu) sağ üstteki düğmelerden değişir; se�
 | `hapq.html` | Tarayıcı arayüzü |
 | `HAP_Donusturucu_Mac.command` | macOS başlatıcısı |
 | `HAP_Donusturucu_Windows.bat` | Windows başlatıcısı |
+
+Yeni sürüm yayınlamak için `hapq_server.py` içindeki `VERSION` değerini artırın ve GitHub'da aynı numarayla (ör. `v1.1.0`) bir **Release** oluşturun.
 
 Arayüzün yazı tipi [Inter](https://rsms.me/inter/) (SIL Open Font License 1.1); internetsiz çalışması için `hapq.html` içine gömülüdür.
 

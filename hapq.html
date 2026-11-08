@@ -84,6 +84,7 @@ svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .mark{width:20px;height:20px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
 .mark i{border-radius:2px;background:var(--ink)}
 .mark i:nth-child(4){background:var(--ink-3)}
+.ver{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--ink-3)}
 .br{display:none}
 .tools{margin-left:auto;display:flex;align-items:center;gap:12px}
 .seg{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--bg)}
@@ -116,6 +117,18 @@ h2{font-size:14px;line-height:20px;font-weight:500;margin:0 0 16px;color:var(--i
 .banner{grid-column:1/-1;border-radius:var(--r);padding:12px 16px 12px 36px;position:relative;background:var(--err-bg);color:var(--err);border:1px solid var(--err-bg);line-height:20px}
 .banner::before{content:"";position:absolute;left:16px;top:18px;width:8px;height:8px;border-radius:50%;background:var(--err)}
 .banner code{font-family:var(--mono);font-size:12px;background:var(--panel);color:var(--ink);padding:2px 4px;border-radius:2px;border:1px solid var(--line)}
+
+/* ---------- güncelleme şeritleri */
+.notices{grid-column:1/-1;display:flex;flex-direction:column;gap:8px}
+.notice{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-lg);flex-wrap:wrap}
+.notice::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.notice .nt{flex:1;min-width:240px;font-size:13px;line-height:20px;color:var(--ink-2)}
+.notice .nt b{font-weight:500;color:var(--ink);margin-right:8px}
+.notice code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--raised);border:1px solid var(--line);padding:2px 8px;border-radius:var(--r-sm);white-space:nowrap}
+.notice .na{display:flex;gap:8px;align-items:center}
+.notice a.small{display:inline-flex;align-items:center;height:28px;padding:0 12px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;border:1px solid var(--line-2);border-radius:var(--r-sm)}
+@media (hover:hover) and (pointer:fine){ .notice a.small:hover{background:var(--sunk);border-color:var(--ink-3)} }
+button.small.primary{height:28px;padding:0 12px;font-size:12px}
 
 /* ---------- alanlar */
 .field + .field{margin-top:16px}
@@ -267,6 +280,7 @@ tr.detail td{background:var(--sunk);padding-top:16px;padding-bottom:20px}
   .tools{order:1}
   .pill{order:3;max-width:100%}
   .tools .vr,.tools .credit{display:none}
+  .ver{display:none}
   .foot{display:block}
   .side{display:block}
   .sec + .sec{border-left:0;border-top:1px solid var(--line)}
@@ -299,7 +313,7 @@ tr.detail td{background:var(--sunk);padding-top:16px;padding-bottom:20px}
 </svg>
 
 <header class="top"><div class="top-in">
-  <h1 class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span data-i18n="app">HAP Dönüştürücü</span></h1>
+  <h1 class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span data-i18n="app">HAP Dönüştürücü</span><span id="ver" class="ver"></span></h1>
   <span id="envPill" class="pill" data-i18n="env.checking">ffmpeg Aranıyor…</span>
   <span class="br"></span>
   <div class="tools">
@@ -318,6 +332,7 @@ tr.detail td{background:var(--sunk);padding-top:16px;padding-bottom:20px}
 
 <div class="app">
   <div id="envBanner" class="banner" hidden></div>
+  <div id="updates" class="notices" hidden></div>
 
   <aside class="side">
     <section class="sec" aria-labelledby="h-dirs">
@@ -410,6 +425,7 @@ tr.detail td{background:var(--sunk);padding-top:16px;padding-bottom:20px}
       <div class="checks">
         <label class="check"><input type="checkbox" id="skip_existing" checked> <span data-i18n="skip">Hedefte Olanları Atla</span></label>
         <label class="check"><input type="checkbox" id="verify" checked> <span><span data-i18n="verify">Renkleri Kaynakla Karşılaştır</span><span class="sub" data-i18n="verify.sub">Her dosya bitince ortadaki kare kontrol edilir</span></span></label>
+        <label class="check"><input type="checkbox" id="check_updates" checked> <span><span data-i18n="upd">Güncellemeleri Denetle</span><span class="sub" data-i18n="upd.sub">Açılışta GitHub'da yeni sürüm, ffmpeg için yeni güncelleme aranır</span></span></label>
       </div>
     </section>
   </aside>
@@ -450,7 +466,7 @@ const TOKEN = "__HAPQ_TOKEN__";
 const $ = s => document.querySelector(s);
 const MN = {bt709:"BT.709", bt601:"BT.601", bt2020:"BT.2020", smpte240m:"SMPTE 240M", fcc:"FCC"};
 const LVL_RANK = {ok:0, info:1, warn:2, err:3};
-const SETTING_IDS = ["format","compressor","chunks","jobs","audio","assume","cfr","skip_existing","verify"];
+const SETTING_IDS = ["format","compressor","chunks","jobs","audio","assume","cfr","skip_existing","verify","check_updates"];
 const COLS = 5;
 const pl = (n, one, many) => n===1 ? one : many;
 
@@ -505,7 +521,16 @@ tr: {
   start:"Dönüştürmeyi Başlat", cancel:"Durdur",
   "confirm.hdr":"{n} HDR dosya seçili; renkleri yanlış çıkacak. Yine de devam edilsin mi?",
   "err.server":"Sunucuya ulaşılamıyor. Başlatıcı penceresi kapanmış olabilir; programı yeniden çalıştırın.",
-  "err.noresp":"Sunucudan yanıt alınamadı.", "err.code":"Hata {c}"
+  "err.noresp":"Sunucudan yanıt alınamadı.", "err.code":"Hata {c}",
+  upd:"Güncellemeleri Denetle", "upd.sub":"Açılışta GitHub'da yeni sürüm, ffmpeg için yeni güncelleme aranır",
+  "up.app":"HAP Dönüştürücü {v} Yayında", "up.appSub":"Sizdeki sürüm {c}. Güncelleme yalnızca program dosyalarını değiştirir; videolarınıza ve ayarlarınıza dokunmaz.",
+  "up.git":"Sizdeki sürüm {c}. Bu klasör git ile indirilmiş; güncellemek için klasörde <code>git pull</code> çalıştırın.",
+  "up.readonly":"Sizdeki sürüm {c}. Program klasörüne yazılamıyor; yeni sürümü GitHub'dan indirin.",
+  "up.do":"Güncelle", "up.doing":"İndiriliyor…", "up.notes":"Neler Yeni", "up.get":"İndir", "up.later":"Sonra",
+  "up.restarting":"Güncellendi. Yeniden başlatılıyor…", "up.manual":"Güncellendi. Pencereyi kapatıp başlatıcıya yeniden çift tıklayın.",
+  "up.ff":"ffmpeg {v} Yayında", "up.ffSub":"Sizdeki sürüm {c}. Güncellemek için şunu çalıştırın, sonra programı yeniden açın:",
+  "up.ffManual":"Sizdeki sürüm {c}. gyan.dev'den yeni ffmpeg-release-full paketini indirip ffmpeg.exe ile ffprobe.exe'yi değiştirin.",
+  "up.copy":"Kopyala", "up.copied":"Kopyalandı"
 },
 en: {
   app:"HAP Converter", lang:"Language", theme:"Theme", "theme.light":"Light Theme", "theme.dark":"Dark Theme", credit:"Made by",
@@ -555,7 +580,16 @@ en: {
   start:"Start Converting", cancel:"Stop",
   "confirm.hdr":v=>`${v.n} HDR ${pl(v.n,"file is","files are")} selected; ${pl(v.n,"its","their")} colors will be wrong. Continue anyway?`,
   "err.server":"Can't reach the server. The launcher window may have been closed; run the app again.",
-  "err.noresp":"No response from the server.", "err.code":"Error {c}"
+  "err.noresp":"No response from the server.", "err.code":"Error {c}",
+  upd:"Check for Updates", "upd.sub":"On launch, looks on GitHub for a new version and checks for a newer ffmpeg",
+  "up.app":"HAP Converter {v} Is Available", "up.appSub":"You have {c}. Updating only replaces the program files; your videos and settings are not touched.",
+  "up.git":"You have {c}. This folder was cloned with git; run <code>git pull</code> in it to update.",
+  "up.readonly":"You have {c}. The program folder isn't writable; download the new version from GitHub.",
+  "up.do":"Update", "up.doing":"Downloading…", "up.notes":"What's New", "up.get":"Download", "up.later":"Later",
+  "up.restarting":"Updated. Restarting…", "up.manual":"Updated. Close the window and double-click the launcher again.",
+  "up.ff":"ffmpeg {v} Is Available", "up.ffSub":"You have {c}. To update, run this, then reopen the app:",
+  "up.ffManual":"You have {c}. Download the new ffmpeg-release-full package from gyan.dev and replace ffmpeg.exe and ffprobe.exe.",
+  "up.copy":"Copy", "up.copied":"Copied"
 }};
 
 // Sunucu Türkçe yazar; EN seçiliyse bilinen mesajlar burada çevrilir. Tanınmayan metin olduğu gibi kalır.
@@ -593,6 +627,13 @@ const SRV_EN = [
   [/^Bulunamadı\.$/, "Not found."],
   [/^Oturum geçersiz; sayfayı yenileyin\.$/, "Session expired; reload the page."],
   [/^Beklenmeyen hata: (.*)$/, "Unexpected error: $1"],
+  [/^Dönüştürme sürerken güncellenemez\.$/, "Can't update while converting."],
+  [/^Bu klasör git ile indirilmiş; güncellemek için klasörde git pull çalıştırın\.$/, "This folder was cloned with git; run git pull in it to update."],
+  [/^Program klasörüne yazılamıyor; yeni sürümü GitHub'dan indirin\.$/, "The program folder isn't writable; download the new version from GitHub."],
+  [/^Yeni sürüm bulunamadı\.$/, "No new version found."],
+  [/^Güncelleme indirilemedi; internet bağlantınızı kontrol edin\.$/, "Couldn't download the update; check your internet connection."],
+  [/^İndirilen güncelleme beklenen dosyaları içermiyor\.$/, "The downloaded update is missing expected files."],
+  [/^İndirilen güncelleme bozuk\.$/, "The downloaded update is damaged."],
 ];
 
 let LANG = document.documentElement.lang==="en" ? "en" : "tr";
@@ -607,6 +648,7 @@ function srv(s){
   return s;
 }
 
+let UPD = null, UPD_MSG = null;
 let ENV = null, ENV_DOWN = false, FILES = [], BYID = {}, FREE = null, OUTDIR = "", SCANNING = false;
 let SEL = new Set(), OVR = {}, ST = null, pollTimer = null, OPEN = new Set();
 const S = {};
@@ -642,7 +684,7 @@ function applyLang(lang){
   for(const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   for(const el of document.querySelectorAll("[data-i18n-aria]")) el.setAttribute("aria-label", t(el.dataset.i18nAria));
   for(const b of document.querySelectorAll("[data-lang]")) b.setAttribute("aria-pressed", b.dataset.lang===LANG);
-  renderEnv(); renderHead(); render();
+  renderEnv(); renderHead(); renderUpdates(); render();
   if(ST && ST.started){ updateTotals(); if(ST.state!=="running") finish(); }
 }
 const darkMQ = matchMedia("(prefers-color-scheme: dark)");
@@ -666,6 +708,56 @@ function renderEnv(){
     b.hidden = false;
   }
 }
+// ---------- güncellemeler
+async function checkUpdates(){
+  if(!S.check_updates || !ENV) return;
+  try{ UPD = await api("/api/updates"); }catch(e){ UPD = null; }
+  renderUpdates();
+}
+function dismissed(){ return load("dismiss", {}); }
+function renderUpdates(){
+  const box = $("#updates"); if(!box) return;
+  const html = [];
+  const d = dismissed();
+  const a = UPD && UPD.app, f = UPD && UPD.ffmpeg;
+  if(UPD_MSG){
+    html.push(`<div class="notice"><div class="nt"><b>${esc(t(UPD_MSG))}</b></div></div>`);
+  }else if(S.check_updates && a && a.newer && d.app!==a.latest){
+    const sub = a.why==="git" ? t("up.git",{c:esc(a.current)}) : a.why==="readonly" ? t("up.readonly",{c:esc(a.current)}) : esc(t("up.appSub",{c:a.current}));
+    const act = a.can_apply ? `<button class="small primary" id="upDo">${t("up.do")}</button>` : `<a class="small" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${t("up.get")}</a>`;
+    html.push(`<div class="notice"><div class="nt"><b>${esc(t("up.app",{v:a.latest}))}</b>${sub}</div><div class="na">${act}<a class="small" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${t("up.notes")}</a><button class="small ghost" data-dismiss="app">${t("up.later")}</button></div></div>`);
+  }
+  if(S.check_updates && f && f.newer && d.ff!==f.latest){
+    const manual = f.kind==="manual";
+    const sub = manual ? esc(t("up.ffManual",{c:f.current})) : `${esc(t("up.ffSub",{c:f.current}))} <code>${esc(f.how)}</code>`;
+    const act = manual ? `<a class="small" href="${esc(f.how)}" target="_blank" rel="noopener noreferrer">${t("up.get")}</a>` : `<button class="small" data-copy="${esc(f.how)}">${t("up.copy")}</button>`;
+    html.push(`<div class="notice"><div class="nt"><b>${esc(t("up.ff",{v:f.latest}))}</b>${sub}</div><div class="na">${act}<button class="small ghost" data-dismiss="ff">${t("up.later")}</button></div></div>`);
+  }
+  box.innerHTML = html.join("");
+  box.hidden = !html.length;
+}
+async function doUpdate(btn){
+  btn.disabled = true; btn.textContent = t("up.doing");
+  try{
+    const r = await api("/api/update", {});
+    UPD_MSG = r.restart ? "up.restarting" : "up.manual"; renderUpdates();
+    if(r.restart) waitAndReload();
+  }catch(e){ toast(e.message); btn.disabled = false; btn.textContent = t("up.do"); }
+}
+async function waitAndReload(){
+  await new Promise(r => setTimeout(r, 1500));
+  for(let i=0; i<60; i++){
+    try{ const r = await fetch("/", {cache:"no-store"}); if(r.ok){ location.reload(); return; } }catch(e){}
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+$("#updates").addEventListener("click", async e => {
+  const x = e.target.closest("button"); if(!x) return;
+  if(x.id==="upDo") return doUpdate(x);
+  if(x.dataset.dismiss){ const d = dismissed(); d[x.dataset.dismiss] = x.dataset.dismiss==="app" ? UPD.app.latest : UPD.ffmpeg.latest; store("dismiss", d); renderUpdates(); }
+  if(x.dataset.copy){ try{ await navigator.clipboard.writeText(x.dataset.copy); x.textContent = t("up.copied"); setTimeout(()=>{ x.textContent = t("up.copy"); }, 1600); }catch(err){} }
+});
+
 function renderHead(){
   $("#resolved").textContent = OUTDIR ? t("resolved", {p:OUTDIR}) : "";
   if(SCANNING){ $("#scanInfo").textContent = t("scanning"); return; }
@@ -984,6 +1076,7 @@ $("#rescan").onclick = scan;
 $("#startBtn").onclick = start;
 $("#cancelBtn").onclick = async () => { try{ ST = await api("/api/cancel", {}); }catch(e){ toast(e.message); } };
 for(const id of SETTING_IDS) $("#"+id).addEventListener("change", () => { readSettings(); if(!isBusy()) render(); });
+$("#check_updates").addEventListener("change", () => { if(S.check_updates && !UPD) checkUpdates(); else renderUpdates(); });
 for(const b of document.querySelectorAll("[data-lang]")) b.onclick = () => { store("lang", b.dataset.lang); applyLang(b.dataset.lang); };
 for(const b of document.querySelectorAll("[data-theme-set]")) b.onclick = () => setTheme(b.dataset.themeSet);
 
@@ -1011,6 +1104,8 @@ $("#rows").addEventListener("click", e => {
   try{
     ENV = await api("/api/env");
     renderEnv();
+    if(ENV.app_version) $("#ver").textContent = "v"+ENV.app_version;
+    checkUpdates();
     const ses = await api("/api/session");
     if(ses.input){
       $("#inDir").value = ses.input; $("#outDir").value = load("out","") ? ses.output : "";
