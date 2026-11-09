@@ -39,7 +39,7 @@ TOKEN = secrets.token_urlsafe(18)
 
 # Yeni sürüm yayınlarken bu numarayı artırın ve GitHub'da aynı numarayla
 # (ör. v1.1.0) bir Release oluşturun; kullanıcıların programı onu görür.
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 REPO = "mustafakucuk0/HAP_Donusturucu"
 UA = "HAP-Donusturucu/" + VERSION
 SRV = None
