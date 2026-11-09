@@ -130,6 +130,14 @@ h2{font-size:14px;line-height:20px;font-weight:500;margin:0 0 16px;color:var(--i
 @media (hover:hover) and (pointer:fine){ .notice a.small:hover{background:var(--sunk);border-color:var(--ink-3)} }
 button.small.primary{height:28px;padding:0 12px;font-size:12px}
 
+/* ---------- WATCHOUT */
+.wo-body{margin-top:16px}
+.wo-st{display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12px;line-height:16px;color:var(--ink-2)}
+.wo-st::before{content:"";flex:none;width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--ink-3)}
+.wo-st.ok::before{background:var(--ok)} .wo-st.err::before{background:var(--err)}
+.wo-st .num{color:var(--ink-3)}
+.lic{margin-top:8px;font-size:12px;line-height:16px;color:var(--warn)}
+
 /* ---------- alanlar */
 .field + .field{margin-top:16px}
 .field > label{display:block;font-size:12px;line-height:16px;font-weight:500;color:var(--ink-2);margin-bottom:8px}
@@ -356,6 +364,17 @@ tr.detail td{background:var(--sunk);padding-top:16px;padding-bottom:20px}
       <div class="checks">
         <label class="check"><input type="checkbox" id="recursive"> <span><span data-i18n="rec">Alt Klasörleri Dahil Et</span><span class="sub" data-i18n="rec.sub">Klasör yapısı hedefte aynen korunur</span></span></label>
       </div>
+      <div class="group" style="margin-top:20px">
+        <label class="check"><input type="checkbox" id="wo_mode"> <span><span data-i18n="wo">WATCHOUT ile Çalış</span><span class="sub" data-i18n="wo.sub">Dosyalar WATCHOUT 7'ye otomatik aktarılsın</span></span></label>
+        <div id="woBody" class="wo-body" hidden>
+          <div class="field">
+            <label for="wo_host" data-i18n="wo.host">Director Adresi</label>
+            <input id="wo_host" type="text" value="127.0.0.1" spellcheck="false" autocomplete="off">
+            <div id="woStatus" class="wo-st"></div>
+          </div>
+          <div class="help" data-i18n="wo.help">Hedef Klasör olarak WATCHOUT'taki Asset Watcher klasörünü seçin. Biten her dosya oraya yazılır ve WATCHOUT onu kendiliğinden içeri alır; dosya yazılırken WATCHOUT'a görünmez.</div>
+        </div>
+      </div>
     </section>
 
     <section class="sec" aria-labelledby="h-set">
@@ -368,6 +387,7 @@ tr.detail td{background:var(--sunk);padding-top:16px;padding-bottom:20px}
             <option value="hap" data-i18n="format.hap">HAP · Küçük Dosya, Düşük Kalite</option>
             <option value="hap_alpha" data-i18n="format.alpha">HAP Alpha · Saydamlık İçin</option>
           </select>
+          <div id="woLic" class="lic" hidden></div>
         </div>
         <div class="field">
           <label for="compressor" data-i18n="comp">Sıkıştırma</label>
@@ -466,7 +486,7 @@ const TOKEN = "__HAPQ_TOKEN__";
 const $ = s => document.querySelector(s);
 const MN = {bt709:"BT.709", bt601:"BT.601", bt2020:"BT.2020", smpte240m:"SMPTE 240M", fcc:"FCC"};
 const LVL_RANK = {ok:0, info:1, warn:2, err:3};
-const SETTING_IDS = ["format","compressor","chunks","jobs","audio","assume","cfr","skip_existing","verify","check_updates"];
+const SETTING_IDS = ["format","compressor","chunks","jobs","audio","assume","cfr","skip_existing","verify","check_updates","wo_mode","wo_host"];
 const COLS = 5;
 const pl = (n, one, many) => n===1 ? one : many;
 
@@ -530,7 +550,12 @@ tr: {
   "up.restarting":"Güncellendi. Yeniden başlatılıyor…", "up.manual":"Güncellendi. Pencereyi kapatıp başlatıcıya yeniden çift tıklayın.",
   "up.ff":"ffmpeg {v} Yayında", "up.ffSub":"Sizdeki sürüm {c}. Güncellemek için şunu çalıştırın, sonra programı yeniden açın:",
   "up.ffManual":"Sizdeki sürüm {c}. gyan.dev'den yeni ffmpeg-release-full paketini indirip ffmpeg.exe ile ffprobe.exe'yi değiştirin.",
-  "up.copy":"Kopyala", "up.copied":"Kopyalandı"
+  "up.copy":"Kopyala", "up.copied":"Kopyalandı",
+  wo:"WATCHOUT ile Çalış", "wo.sub":"Dosyalar WATCHOUT 7'ye otomatik aktarılsın", "wo.host":"Director Adresi",
+  "wo.help":"Hedef Klasör olarak WATCHOUT'taki Asset Watcher klasörünü seçin. Biten her dosya oraya yazılır ve WATCHOUT onu kendiliğinden içeri alır; dosya yazılırken WATCHOUT'a görünmez.",
+  "wo.checking":"Bağlantı denetleniyor…", "wo.ok":"WATCHOUT'a bağlı", "wo.okVer":"WATCHOUT'a bağlı · {v}",
+  "wo.fail":"Bağlanılamadı. WATCHOUT açık mı, Node Info'da WATCHOUT 7 protokolü etkin mi?",
+  "wo.lic":"WATCHOUT'ta HAP Q oynatma lisans ister. WATCHOUT'un oynatma biçimi HAP Q değilse dosyayı yeniden dönüştürür; lisans yoksa HAP seçin."
 },
 en: {
   app:"HAP Converter", lang:"Language", theme:"Theme", "theme.light":"Light Theme", "theme.dark":"Dark Theme", credit:"Made by",
@@ -589,7 +614,12 @@ en: {
   "up.restarting":"Updated. Restarting…", "up.manual":"Updated. Close the window and double-click the launcher again.",
   "up.ff":"ffmpeg {v} Is Available", "up.ffSub":"You have {c}. To update, run this, then reopen the app:",
   "up.ffManual":"You have {c}. Download the new ffmpeg-release-full package from gyan.dev and replace ffmpeg.exe and ffprobe.exe.",
-  "up.copy":"Copy", "up.copied":"Copied"
+  "up.copy":"Copy", "up.copied":"Copied",
+  wo:"Work with WATCHOUT", "wo.sub":"Send files to WATCHOUT 7 automatically", "wo.host":"Director Address",
+  "wo.help":"Set the Output Folder to WATCHOUT's Asset Watcher folder. Each finished file is written there and WATCHOUT picks it up on its own; files are invisible to WATCHOUT while being written.",
+  "wo.checking":"Checking connection…", "wo.ok":"Connected to WATCHOUT", "wo.okVer":"Connected to WATCHOUT · {v}",
+  "wo.fail":"Can't connect. Is WATCHOUT running, and is the WATCHOUT 7 protocol enabled in Node Info?",
+  "wo.lic":"HAP Q playback in WATCHOUT needs a license. If WATCHOUT's playback format isn't HAP Q, it transcodes the file again; without a license, pick HAP."
 }};
 
 // Sunucu Türkçe yazar; EN seçiliyse bilinen mesajlar burada çevrilir. Tanınmayan metin olduğu gibi kalır.
@@ -627,6 +657,7 @@ const SRV_EN = [
   [/^Bulunamadı\.$/, "Not found."],
   [/^Oturum geçersiz; sayfayı yenileyin\.$/, "Session expired; reload the page."],
   [/^Beklenmeyen hata: (.*)$/, "Unexpected error: $1"],
+  [/^WATCHOUT adresi geçersiz\.$/, "Invalid WATCHOUT address."],
   [/^Dönüştürme sürerken güncellenemez\.$/, "Can't update while converting."],
   [/^Bu klasör git ile indirilmiş; güncellemek için klasörde git pull çalıştırın\.$/, "This folder was cloned with git; run git pull in it to update."],
   [/^Program klasörüne yazılamıyor; yeni sürümü GitHub'dan indirin\.$/, "The program folder isn't writable; download the new version from GitHub."],
@@ -648,7 +679,7 @@ function srv(s){
   return s;
 }
 
-let UPD = null, UPD_MSG = null;
+let UPD = null, UPD_MSG = null, WO = null, woTimer = null, woSeq = 0;
 let ENV = null, ENV_DOWN = false, FILES = [], BYID = {}, FREE = null, OUTDIR = "", SCANNING = false;
 let SEL = new Set(), OVR = {}, ST = null, pollTimer = null, OPEN = new Set();
 const S = {};
@@ -684,7 +715,7 @@ function applyLang(lang){
   for(const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
   for(const el of document.querySelectorAll("[data-i18n-aria]")) el.setAttribute("aria-label", t(el.dataset.i18nAria));
   for(const b of document.querySelectorAll("[data-lang]")) b.setAttribute("aria-pressed", b.dataset.lang===LANG);
-  renderEnv(); renderHead(); renderUpdates(); render();
+  renderEnv(); renderHead(); renderUpdates(); renderWO(); render();
   if(ST && ST.started){ updateTotals(); if(ST.state!=="running") finish(); }
 }
 const darkMQ = matchMedia("(prefers-color-scheme: dark)");
@@ -708,6 +739,27 @@ function renderEnv(){
     b.hidden = false;
   }
 }
+// ---------- WATCHOUT
+function renderWO(){
+  $("#woBody").hidden = !S.wo_mode;
+  const lic = $("#woLic"); lic.hidden = !(S.wo_mode && S.format==="hap_q"); lic.textContent = t("wo.lic");
+  const st = $("#woStatus");
+  if(!S.wo_mode){ st.className = "wo-st"; st.textContent = ""; return; }
+  if(!WO){ st.className = "wo-st"; st.textContent = t("wo.checking"); return; }
+  st.className = "wo-st " + (WO.ok ? "ok" : "err");
+  st.textContent = WO.ok ? (WO.version ? t("wo.okVer",{v:WO.version}) : t("wo.ok")) : t("wo.fail");
+}
+async function checkWO(){
+  clearTimeout(woTimer);
+  if(!S.wo_mode){ renderWO(); return; }
+  const seq = ++woSeq;
+  try{ const r = await api("/api/watchout?host="+encodeURIComponent(S.wo_host||"127.0.0.1")); if(seq===woSeq) WO = r; }
+  catch(e){ if(seq===woSeq) WO = {ok:false}; }
+  if(seq!==woSeq) return;
+  renderWO();
+  woTimer = setTimeout(checkWO, 15000);
+}
+
 // ---------- güncellemeler
 async function checkUpdates(){
   if(!S.check_updates || !ENV) return;
@@ -1076,6 +1128,9 @@ $("#rescan").onclick = scan;
 $("#startBtn").onclick = start;
 $("#cancelBtn").onclick = async () => { try{ ST = await api("/api/cancel", {}); }catch(e){ toast(e.message); } };
 for(const id of SETTING_IDS) $("#"+id).addEventListener("change", () => { readSettings(); if(!isBusy()) render(); });
+$("#wo_mode").addEventListener("change", () => { WO = null; checkWO(); });
+$("#wo_host").addEventListener("change", () => { WO = null; renderWO(); checkWO(); });
+$("#format").addEventListener("change", renderWO);
 $("#check_updates").addEventListener("change", () => { if(S.check_updates && !UPD) checkUpdates(); else renderUpdates(); });
 for(const b of document.querySelectorAll("[data-lang]")) b.onclick = () => { store("lang", b.dataset.lang); applyLang(b.dataset.lang); };
 for(const b of document.querySelectorAll("[data-theme-set]")) b.onclick = () => setTheme(b.dataset.themeSet);
@@ -1106,6 +1161,7 @@ $("#rows").addEventListener("click", e => {
     renderEnv();
     if(ENV.app_version) $("#ver").textContent = "v"+ENV.app_version;
     checkUpdates();
+    checkWO();
     const ses = await api("/api/session");
     if(ses.input){
       $("#inDir").value = ses.input; $("#outDir").value = load("out","") ? ses.output : "";

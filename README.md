@@ -60,6 +60,20 @@ Dil (TR / EN) ve tema (açık / koyu) sağ üstteki düğmelerden değişir; se�
 | Kare Hızı | Kaynakla aynı bırakın ya da sabit bir hıza çevirin |
 | Ses | PCM 24 bit, PCM 16 bit ya da sesi kaldırma |
 
+## WATCHOUT ile çalışma
+
+WATCHOUT 7, içeri aldığı videoları kendi oynatma biçimine dönüştürür; dosya zaten aynı HAP biçimindeyse bu adım neredeyse tamamen atlanır ve içeri alma çok hızlı olur. HAP Dönüştürücü bu yüzden WATCHOUT'a doğrudan dosya gönderebilir:
+
+1. WATCHOUT'ta bir **Asset Watcher** klasörü tanımlayın (Network penceresi → Asset Manager düğümü).
+2. HAP Dönüştürücü'de **WATCHOUT ile Çalış**'ı açın ve **Hedef Klasör** olarak o klasörü seçin.
+3. Dönüştürmeyi başlatın. Biten her dosya klasöre yazılır, WATCHOUT onu kendiliğinden içeri alır.
+
+Dosyalar yazılırken `.hapq-yaziliyor` uzantısıyla durur, WATCHOUT yarım dosyayı görmez; bitince asıl adına (`.mov`) çevrilir.
+
+**Director Adresi**'ne WATCHOUT Director'ın çalıştığı bilgisayarın adresini yazarsanız (aynı bilgisayarsa `127.0.0.1`) bağlantı durumu gösterilir. Bunun için WATCHOUT'ta Node Info → Protocols altında WATCHOUT 7 protokolü açık olmalıdır (port 3019).
+
+WATCHOUT'un ücretsiz oynatma biçimleri HAP ve HAP Alpha'dır; HAP Q oynatmak için WATCHOUT lisansı gerekir. Lisans yoksa **Biçim**'i HAP yapın, yoksa WATCHOUT dosyayı yeniden dönüştürür.
+
 ## Güncellemeler
 
 Program açılışta iki şeye bakar (Ayarlar'daki **Güncellemeleri Denetle** ile kapatılabilir):

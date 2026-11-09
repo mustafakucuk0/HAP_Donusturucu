@@ -365,6 +365,41 @@ def apply_update():
     return {"ok": True, "version": info["latest"], "restart": restart}
 
 
+WO_HOST_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.\-]{0,252}$")
+
+
+def watchout_status(q):
+    """WATCHOUT 7 Director'ın HTTP API'sine (port 3019) kısa bir /info isteği atar."""
+    host = ((q.get("host") or [""])[0] or "127.0.0.1").strip()
+    if not WO_HOST_RE.match(host):
+        raise ApiError("WATCHOUT adresi geçersiz.")
+    url = "http://%s:3019/info" % host
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=2) as r:
+            raw = r.read(65536)
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "host": host}
+    ver = ""
+    try:
+        j = json.loads(raw)
+        stack = [j]
+        while stack and not ver:
+            o = stack.pop()
+            if isinstance(o, dict):
+                for k, v in o.items():
+                    if isinstance(v, str) and "version" in k.lower() and re.match(r"\d", v):
+                        ver = v
+                        break
+                    if isinstance(v, (dict, list)):
+                        stack.append(v)
+            elif isinstance(o, list):
+                stack.extend(o)
+    except ValueError:
+        pass
+    return {"ok": True, "host": host, "version": ver[:32]}
+
+
 def _restart():
     """Mac/Linux: aynı pencerede yeni sürümle yeniden başlar."""
     try:
@@ -725,7 +760,9 @@ class Runner(object):
             return
         od = os.path.dirname(out)
         os.makedirs(od, exist_ok=True)
-        part = os.path.join(od, "." + os.path.splitext(os.path.basename(out))[0] + ".partial.mov")
+        # Yazılırken video uzantısı taşımasın: izlenen klasörler (ör. WATCHOUT Asset Watcher)
+        # yarım dosyayı almasın. Bitince asıl adına çevrilir.
+        part = os.path.join(od, "." + os.path.splitext(os.path.basename(out))[0] + ".hapq-yaziliyor")
         fd, logp = tempfile.mkstemp(suffix=".log", prefix="hapq_")
         self._set(fid, status="running", progress=0.0)
         with os.fdopen(fd, "wb") as log:
@@ -963,6 +1000,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, session())
             if u.path == "/api/status":
                 return self._send(200, RUNNER.snapshot())
+            if u.path == "/api/watchout":
+                return self._send(200, watchout_status(q))
             if u.path == "/api/updates":
                 return self._send(200, check_updates())
             if u.path == "/api/thumb":
